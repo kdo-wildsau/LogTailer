@@ -75,7 +75,6 @@ func main() {
 			}(t)
 
 		case line := <-printChannel:
-			fmt.Println(line)
 			_, err := discordClient.CreateContent(line)
 			if err != nil {
 				fmt.Println(err.Error())
