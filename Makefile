@@ -25,8 +25,9 @@ all:
 	@echo "  app.linux64    build app for linux arm64"
 	@echo "  app.windows64  build app for windows x64"
 	@echo ""
-	@echo "  clean              remove dut binarys"
-	@echo "  distclean          remove build folder"
+	@echo "  lint           run linters"
+	@echo "  clean          remove dut binarys"
+	@echo "  distclean      remove build folder"
 
 
 app: app.darwin64 app.darwinArm app.linux64 app.windows64

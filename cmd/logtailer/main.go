@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,15 +11,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SebastianRau/LogTailer/pkg/logtailer"
-	"github.com/disgoorg/disgo/webhook"
+	"github.com/kdo-wildsau/logTailer/pkg/logtailer"
+	"github.com/logdna/logdna-go/logger"
 	"github.com/nxadm/tail"
 )
 
 func main() {
 
 	var (
-		configFile = flag.String("c", "config/config.json", "path to logfile. Could be file, folder, or has a wildcard *")
+		configFile = flag.String("c", "config.json", "path to logfile. Could be file, folder, or has a wildcard *")
 	)
 	flag.Parse()
 
@@ -37,11 +36,30 @@ func main() {
 		panic(err.Error())
 	}
 
-	discordClient, err := webhook.NewWithURL(config.DiscordWebhookUrl)
+	if config.MemzoIngestionKey == "" {
+		panic("No MemzoIngestionKey could be found in the config file")
+	}
+
+	if config.MemzoInstanceName == "" {
+		config.MemzoInstanceName = "NO NAME GIVEN"
+		fmt.Println("Warning: MemzoInstanceName is not set")
+	}
+
+	hostname, _ := os.Hostname()
+	options := logger.Options{
+		App:           config.MemzoInstanceName,
+		FlushInterval: 10 * time.Second,
+		SendTimeout:   0,
+		Hostname:      hostname,
+		IndexMeta:     false,
+		Level:         "fatal",
+	}
+
+	memzoClient, err := logger.NewLogger(options, config.MemzoIngestionKey)
 	if err != nil {
 		panic(err)
 	}
-	defer discordClient.Close(context.TODO())
+	defer memzoClient.Close()
 
 	go fileWatcher(config, filesNotification)
 
@@ -75,10 +93,7 @@ func main() {
 			}(t)
 
 		case line := <-printChannel:
-			_, err := discordClient.CreateContent(line)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
+			memzoClient.Debug(line)
 		}
 	}
 }
